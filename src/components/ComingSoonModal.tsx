@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Smartphone, X, Mail, CheckCircle } from "lucide-react";
+import { supabase } from "../lib/supabaseClient";
 
 interface ComingSoonModalProps {
   isOpen: boolean;
@@ -27,13 +28,7 @@ export function ComingSoonModal({
     const cleanedEmail = email.trim().toLowerCase();
 
     try {
-      const { error } = await supabase
-        .from("sa_waitlist")
-        .insert({
-          email: cleanedEmail,
-          source: "landing_modal",
-          city: "Johannesburg", // optionnel
-        });
+      const { error } = await supabase.from("leads").insert([{ email }]);
 
       // Si email déjà présent (unique index), Supabase renvoie une erreur 23505
       // On la traite comme "success" (l'utilisateur est déjà sur la liste).

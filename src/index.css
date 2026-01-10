@@ -2,10 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Ton CSS custom ensuite (optionnel) */
 :root {
-  color-scheme: dark;
+  --aqva-bg: #0b1f2a;
+  --aqva-primary: #2dd4bf;
+  --aqva-text: #e5e7eb;
 }
+
 body {
-  margin: 0;
+  @apply bg-[var(--aqva-bg)] text-[var(--aqva-text)] antialiased;
 }
