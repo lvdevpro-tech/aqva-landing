@@ -15,46 +15,66 @@ export function ComingSoonModal({ isOpen, onClose }: ComingSoonModalProps) {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const handleEmailSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setSubmitError(null);
-    setSubmitting(true);
 
-    const cleanedEmail = email.trim().toLowerCase();
-    let ok = false;
+const getParam = (key: string) => {
+  const url = new URL(window.location.href);
+  return (url.searchParams.get(key) || "").trim();
+};
 
-    try {
-      const { error } = await supabase.from("leads").insert([{ email: cleanedEmail }]);
+const normalizeArea = (s: string) =>
+  s.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
 
-      if (error) {
-        const msg = (error as any)?.message ?? "";
-        const code = (error as any)?.code ?? "";
-        const isDuplicate = code === "23505" || msg.toLowerCase().includes("duplicate");
+const normalizeSource = (s: string) =>
+  s.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
 
-        if (isDuplicate) {
-          ok = true;
-        } else {
-          setSubmitError("Sorry, we couldn't save your email. Please try again.");
-        }
-      } else {
-        ok = true;
-      }
+const handleEmailSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setSubmitError(null);
+  setSubmitting(true);
 
-      if (ok) {
+  const cleanedEmail = email.trim().toLowerCase();
+
+  const source = normalizeSource(getParam("src")) || "unknown";
+  const area = normalizeArea(getParam("area")) || "unknown";
+
+  try {
+    const payload = {
+      email: cleanedEmail,
+      source,
+      area,
+      user_agent: navigator.userAgent,
+      referrer: document.referrer || null,
+    };
+
+    const { error } = await supabase.from("leads").insert([payload]);
+
+    if (error) {
+      const msg = (error as any)?.message ?? "";
+      const code = (error as any)?.code ?? "";
+      const isDuplicate =
+        code === "23505" || msg.toLowerCase().includes("duplicate");
+
+      if (isDuplicate) {
         setEmailSubmitted(true);
-        setTimeout(() => {
-          onClose();
-          setEmailSubmitted(false);
-          setEmail("");
-        }, 2000);
+      } else {
+        setSubmitError("Sorry, we couldn't save your email. Please try again.");
       }
-    } catch (err) {
-      console.error(err);
-      setSubmitError("Sorry, we couldn't save your email. Please try again.");
-    } finally {
-      setSubmitting(false);
+    } else {
+      setEmailSubmitted(true);
     }
-  };
+
+    setTimeout(() => {
+      onClose();
+      setEmailSubmitted(false);
+      setEmail("");
+    }, 2000);
+  } catch (err) {
+    console.error(err);
+    setSubmitError("Sorry, we couldn't save your email. Please try again.");
+  } finally {
+    setSubmitting(false);
+  }
+};
 
   return (
     <AnimatePresence>
@@ -74,14 +94,7 @@ export function ComingSoonModal({ isOpen, onClose }: ComingSoonModalProps) {
             className="bg-gradient-to-br from-slate-900 to-slate-800 border-2 border-cyan-500/50 rounded-3xl p-8 md:p-12 max-w-md w-full relative"
             onClick={(e) => e.stopPropagation()}
           >
-            <button
-              onClick={onClose}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors"
-            >
-              <X className="w-6 h-6" />
-            </button>
-
-            {!emailSubmitted ? (
+                        {!emailSubmitted ? (
               <>
                 <div className="text-center mb-6">
                   <div className="w-20 h-20 mx-auto bg-cyan-500/20 rounded-full flex items-center justify-center mb-4">
@@ -90,6 +103,14 @@ export function ComingSoonModal({ isOpen, onClose }: ComingSoonModalProps) {
                   <h2 className="text-white text-3xl mb-3">AQVA is launching soon</h2>
                   <h3 className="text-cyan-400 text-xl mb-4">in Johannesburg</h3>
                 </div>
+
+                <button
+  onClick={onClose}
+  className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors"
+>
+  <X className="w-6 h-6" />
+</button>
+
 
                 <p className="text-slate-300 text-center mb-8">
                   We're preparing the app for launch.
